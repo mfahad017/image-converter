@@ -1,113 +1,171 @@
-import Image from 'next/image'
+'use client';
+import { ImageList } from '@/components/ImageList';
+import { UploadedImage } from '@/components/UploadedImage';
+import { Meta } from '@/layout/Meta';
+import { Main } from '@/template/Main';
+import axios from 'axios';
+import { ReadStream } from 'fs';
+import Image from 'next/image';
+import {
+  ChangeEvent,
+  ChangeEventHandler,
+  LegacyRef,
+  useRef,
+  useState,
+} from 'react';
+import { v4 as uuid } from 'uuid';
 
 export default function Home() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>();
+  const [webpToggle, setWebpToggle] = useState(true);
+
+  // const handleWebpToggle = (index: number) => {
+  //   console.log(index);
+
+  //   const updated = files.map((f, i) => {
+  //     const updatedItem = { ...f };
+  //     if (i === index) {
+  //       updatedItem.convertToWebp = !updatedItem.convertToWebp;
+  //     }
+  //     return updatedItem;
+  //   });
+  //   setFiles(updated);
+  // };
+
+  const onFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+
+    if (!files) return;
+
+    const fs: File[] = [];
+
+    for (let i = 0; i < 100; i++) {
+      const currentFile = files[i];
+
+      if (!currentFile) {
+        break;
+      }
+      fs.push(currentFile);
+    }
+
+    setFiles((prev) => {
+      return [...prev, ...fs];
+    });
+  };
+
+  const handleDelete = (id: number) => {
+    const updated = files
+      .map((_, i) => {
+        if (i === id) {
+          return null;
+        }
+        return _;
+      })
+      .filter((r) => r) as File[];
+    if (fileInputRef.current) {
+      fileInputRef.current.files = new FileList();
+    }
+    setFiles(updated);
+  };
+
+  const handleApi = async () => {
+    setIsLoading(true);
+    try {
+      const form = new FormData();
+
+      files.forEach((f, i) => {
+        form.append(`file-${i}`, f);
+      });
+      form.append(
+        'settings',
+        JSON.stringify({
+          convertToWebp: webpToggle,
+        })
+      );
+
+      // ReadStream()
+
+      const { data } = await axios.post('/api/convert', form);
+
+      window.location.href = data.url;
+
+      setFiles([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.files = new FileList();
+      }
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  let buttonText = 'Convert';
+
+  if (isLoading) {
+    buttonText = 'Loading...';
+  }
+
+  if (!files.length) {
+    buttonText = 'Select files first';
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+    <Main
+      meta={
+        <Meta
+          title="ImConv"
+          description="Convert your image and optimize according to your need"
         />
+      }
+    >
+      <div className="p-4">
+        {/* Input Component */}
+        <div className="form-control w-full">
+          <label className="label">
+            <span className="label-text">Pick a file</span>
+            <span className="label-text-alt">Optimize</span>
+          </label>
+          <input
+            accept="image/*"
+            type="file"
+            className="file-input file-input-bordered w-full"
+            multiple={true}
+            onChange={onFileUpload}
+          />
+        </div>
+        <div>
+          <button
+            className={`my-8 btn`}
+            onClick={handleApi}
+            disabled={isLoading || !files.length}
+          >
+            {isLoading && <span className="loading loading-spinner"></span>}
+            {buttonText}
+          </button>
+        </div>
+        <div>
+          {/* Settings */}
+          {/* <h2 className="my-8">Settings</h2>
+          <div className="flex flex-row items-center gap-10">
+            <label htmlFor="webp-toggle" className="cursor-pointer">
+              Convert to Webp
+            </label>
+            <input
+              id="webp-toggle"
+              type="checkbox"
+              className="toggle"
+              value={webpToggle ? 'on' : 'off'}
+              onChange={() => setWebpToggle(!webpToggle)}
+              accept="image/*"
+            />
+          </div> */}
+        </div>
+        {/* Image Preview */}
+        <ImageList {...{ files, handleDelete }} />
       </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore the Next.js 13 playground.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+    </Main>
+  );
 }
