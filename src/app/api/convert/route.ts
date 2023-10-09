@@ -13,16 +13,8 @@ import JSZip from 'jszip';
  * https://github.com/oven-sh/bun/issues/2644
  */
 
-const pipeline = promisify(streamPipeline);
-
 const delay = (seconds = 1) =>
   new Promise((resolve) => setTimeout(resolve, 1000 * seconds));
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
 
 const eventEmitter = new EventEmitter();
 
