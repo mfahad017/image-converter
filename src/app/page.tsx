@@ -89,7 +89,7 @@ export default function Home() {
 
       const { data } = await axios.post('/api/convert', form);
 
-      window.location.href = data.url;
+      window.location.href = window.location.origin + data.url;
 
       setFiles([]);
       if (fileInputRef.current) {

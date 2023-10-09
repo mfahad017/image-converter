@@ -140,7 +140,7 @@ export const POST = async (req: NextRequest) => {
     eventEmitter.emit('cleanup-images');
 
     return Response.json({
-      url: 'http://localhost:3000/api/convert',
+      url: '/api/convert',
     });
   } catch (error) {
     console.log(error);
