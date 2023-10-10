@@ -1,5 +1,4 @@
 import { NextRequest } from 'next/server';
-
 import fs from 'fs';
 import sharp from 'sharp';
 import path, { join } from 'path';
