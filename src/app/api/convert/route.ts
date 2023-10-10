@@ -38,7 +38,7 @@ eventEmitter.on('cleanup-zip', () => {
   fs.unlinkSync('./storage/z.zip');
 });
 
-export const POST = async (req: NextRequest) => {
+export async function POST(req: NextRequest) {
   try {
     // Parse the uploaded files.
     const formData = await req.formData();
@@ -144,9 +144,9 @@ export const POST = async (req: NextRequest) => {
   } catch (error) {
     console.log(error);
   }
-};
+}
 
-export const GET = async () => {
+export async function GET() {
   const zipReadStream = fs.createReadStream('./storage/z.zip');
 
   const stats = fs.statSync('./storage/z.zip');
@@ -166,4 +166,4 @@ export const GET = async () => {
   });
 
   return response;
-};
+}
